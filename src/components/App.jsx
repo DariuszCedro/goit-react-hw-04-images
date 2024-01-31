@@ -1,62 +1,49 @@
-import React, { Component } from 'react';
+import React, { useState } from 'react';
 import { Searchbar } from './Searchbar/Searchbar';
 import { Modal } from './Modal/Modal';
 import { Loader } from './Loader/Loader';
 import { ImageGallery } from './ImageGallery/ImageGallery';
 import { Button } from './Button/Button';
 
-export class App extends Component {
-  state = {
-    keyword: '',
-    currentPage: 1,
-    isLoading: false,
-    images: [],
-    showModal: false,
-    modalImg: '',
-  };
+export const App = () => {
+  const [images, setImages] = useState([]);
+  const [currentPage, setPage] = useState(1);
+  const [isLoading, setLoading] = useState(false);
+  const [showModal, setShowModal] = useState(false);
+  const [modalImg, setModalImage] = useState('');
 
-  timer = null;
-
-  handleSearch = async () => {
+  const handleSearch = async () => {
     const apiKey = process.env.REACT_APP_API_KEY;
 
     const form = document.querySelector('form');
     const keywordsToSearch = form.elements.keywords.value;
-    this.handleCurrentPageUpdate();
+    handleCurrentPageUpdate();
     try {
-      this.setState({ isLoading: true });
+      setLoading(true);
       const response = await fetch(
-        `https://pixabay.com/api/?key=${apiKey}&q=${keywordsToSearch}&per_page=12&page=${this.state.currentPage}`
+        `https://pixabay.com/api/?key=${apiKey}&q=${keywordsToSearch}&per_page=12&page=${currentPage}`
       );
       const data = await response.json();
 
-      this.setState(
-        this.state.currentPage === 1
-          ? { images: data.hits }
-          : { images: [...this.state.images, ...data.hits] }
-      );
+      setImages(currentPage === 1 ? data.hits : [...images, ...data.hits]);
     } catch (error) {
       console.log(error);
     } finally {
-      this.setState({ isLoading: false });
+      setLoading(false);
     }
   };
 
-  handleCurrentPageUpdate = () => {
-    this.setState(state => {
-      return {
-        currentPage: state.currentPage + 1,
-      };
-    });
+  const handleCurrentPageUpdate = () => {
+    setPage(currentPage + 1);
   };
 
-  openModal = imageURL => {
-    this.setState({ modalImg: imageURL });
-    this.setState({ showModal: true });
+  const openModal = imageURL => {
+    setModalImage(imageURL);
+    setShowModal(true);
 
     const handleESC = evt => {
       if (evt.key === 'Escape') {
-        this.closeModal();
+        closeModal();
         document.removeEventListener('keydown', handleESC);
       }
     };
@@ -64,31 +51,22 @@ export class App extends Component {
     document.addEventListener('keydown', handleESC);
   };
 
-  closeModal = () => {
-    this.setState({ showModal: false });
-    this.setState({ modalImg: '' });
+  const closeModal = () => {
+    setShowModal(false);
+    setModalImage('');
   };
 
-  handleClick = () => {
-    this.handleSearch();
+  const handleClick = () => {
+    handleSearch();
   };
 
-  render() {
-    return (
-      <>
-        <Searchbar handleSearch={this.handleSearch} />
-        <ImageGallery images={this.state.images} openModal={this.openModal} />
-        {this.state.isLoading && <Loader />}
-        <Button
-          show={this.state.images.length > 0}
-          onClick={this.handleClick}
-        />
-        <Modal
-          show={this.state.showModal}
-          imageURL={this.state.modalImg}
-          onClose={this.closeModal}
-        />
-      </>
-    );
-  }
-}
+  return (
+    <>
+      <Searchbar handleSearch={handleSearch} />
+      <ImageGallery images={images} openModal={openModal} />
+      {isLoading && <Loader />}
+      <Button show={images.length > 0} onClick={handleClick} />
+      <Modal show={showModal} imageURL={modalImg} onClose={closeModal} />
+    </>
+  );
+};
